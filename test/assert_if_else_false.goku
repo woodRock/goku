@@ -1,0 +1,1 @@
+if false then assert false else assert true
