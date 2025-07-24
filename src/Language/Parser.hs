@@ -72,12 +72,25 @@ parseApplication = do
     parseArgs currentFunc = Parser $ \ts ->
         case runParser' peek ts of
             Right (t, _) ->
-                if isBinaryOperator t
+                if isBinaryOperator t || isNewStatement ts
                 then Right (currentFunc, ts)
                 else case runParser' parsePrimary ts of
                     Right (arg, ts') -> runParser' (parseArgs (App currentFunc arg)) ts'
                     Left _ -> Right (currentFunc, ts)
             Left _ -> Right (currentFunc, ts) -- End of input, stop parsing arguments
+
+-- Check if the current token stream starts a new statement
+isNewStatement :: [Token] -> Bool
+isNewStatement (TVar _ : TAssign : _) = True  -- Variable assignment
+isNewStatement (TLet : _) = True
+isNewStatement (TSet : _) = True
+isNewStatement (TIf : _) = True
+isNewStatement (TWhile : _) = True
+isNewStatement (TReturn : _) = True
+isNewStatement (TAssert : _) = True
+isNewStatement [TEOF] = True
+isNewStatement [] = True
+isNewStatement _ = False
 
 isBinaryOperator :: Token -> Bool
 isBinaryOperator TEquals = True
@@ -113,10 +126,16 @@ parsePrimary = do
             consume t
             return $ Var s
         LParen -> do
-            consume LParen
-            e <- parseExpr
-            consume RParen
-            return e
+            -- Check if this is a parameter list for a lambda or just a parenthesized expression
+            tokens <- getTokens
+            case tokens of
+                (LParen : TVar _ : _) -> parseLambdaWithParams
+                (LParen : RParen : _) -> parseLambdaWithParams -- No params
+                _ -> do
+                    consume LParen
+                    e <- parseExpr
+                    consume RParen
+                    return e
         TLam -> do
             consume TLam
             t' <- peek
@@ -125,15 +144,66 @@ parsePrimary = do
                     consume t'
                     consume TArrow
                     e <- parseExpr
-                    return $ Lam s TInt e
+                    return $ Lam [s] TInt e
                 _ -> parseError "Expected a variable after lambda"
         _ -> parseError "Expected a primary expression"
+
+parseLambdaWithParams :: Parser Expr
+parseLambdaWithParams = do
+    consume LParen
+    params <- parseParamList
+    consume RParen
+    consume TArrow
+    body <- parseExprOrBlock
+    return $ Lam params TInt body
+
+parseParamList :: Parser [String]
+parseParamList = do
+    t <- peek
+    case t of
+        RParen -> return [] -- No parameters
+        TVar name -> do
+            consume t
+            rest <- parseRestParams
+            return (name : rest)
+        _ -> parseError "Expected parameter name or closing parenthesis"
+
+parseRestParams :: Parser [String]
+parseRestParams = do
+    t <- peek
+    case t of
+        TComma -> do
+            consume TComma
+            name <- parseVar
+            rest <- parseRestParams
+            return (name : rest)
+        _ -> return []
+
+parseExprOrBlock :: Parser Expr
+parseExprOrBlock = do
+    t <- peek
+    case t of
+        LBrace -> do
+            stmts <- parseBlock
+            -- For function bodies, we need to find the return statement
+            case findReturnExpr stmts of
+                Just expr -> return expr
+                Nothing -> parseError "Function body must return a value"
+        _ -> parseExpr
+
+-- Helper function to extract the expression from a return statement in a block
+findReturnExpr :: [Stmt] -> Maybe Expr
+findReturnExpr [] = Nothing
+findReturnExpr [Return expr] = Just expr
+findReturnExpr (Return expr : _) = Just expr
+findReturnExpr (_ : rest) = findReturnExpr rest
 
 -- This is the fixed statement parser.
 parseStmt :: Parser Stmt
 parseStmt = do
     t <- peek
     case t of
+        LBrace -> Block <$> parseBlock
         TLet -> do
             consume TLet
             name <- parseVar
@@ -172,6 +242,8 @@ parseStmt = do
         TVar _ -> do
             tokens <- getTokens
             case tokens of
+                -- Check for function definition: name = (params) -> expr or block
+                (_ : TAssign : LParen : _) -> parseFunctionDef
                 -- If the variable is followed by '=', it's an assignment.
                 (_ : TAssign : _) -> do
                     name <- parseVar
@@ -182,6 +254,20 @@ parseStmt = do
                 _ -> ExprStmt <$> parseExpr
         -- For any other token, it must be the start of an expression statement.
         _ -> ExprStmt <$> parseExpr
+
+parseFunctionDef :: Parser Stmt
+parseFunctionDef = do
+    name <- parseVar
+    consume TAssign
+    funcExpr <- parseLambdaWithParams
+    return $ Set name funcExpr
+
+parseBlock :: Parser [Stmt]
+parseBlock = do
+    consume LBrace
+    stmts <- many parseStmt
+    consume RBrace
+    return stmts
 
 parseVar :: Parser String
 parseVar = do
@@ -201,8 +287,3 @@ many p = Parser $ \ts -> case runParser' p ts of
         Right (xs, ts'') -> Right (x:xs, ts'')
         Left err -> Left err
     Left _ -> Right ([], ts)
-
-(<|>) :: Parser a -> Parser a -> Parser a
-p1 <|> p2 = Parser $ \ts -> case runParser' p1 ts of
-    Right (a, ts') -> Right (a, ts')
-    Left _ -> runParser' p2 ts

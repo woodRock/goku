@@ -1,0 +1,20 @@
+# id function returns the value of a variable.
+id = (x) -> {
+    return x
+}
+
+# inline id function, funtionally equivalent to above.
+id2 = (x) -> x
+
+# add function takes to arguments, and returns their sum.
+add = (x,y) -> {
+    return x + y
+}
+
+# inline add function, functionally equivalent to the above.
+add2 = (x,y) -> x + y
+
+assert (id(1) == 1)
+assert (id2(1) == 1)
+assert (add(1,1) == 2)
+assert (add2(1,1) == 2)

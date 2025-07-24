@@ -25,6 +25,9 @@ data Token
   | TSet
   | LParen
   | RParen
+  | LBrace
+  | RBrace
+  | TComma
   | TLessThan
   | TEOF
   deriving (Show, Eq)
@@ -33,6 +36,7 @@ tokenize :: String -> [Token]
 tokenize [] = [TEOF]
 tokenize ('-':'>':cs) = TArrow : tokenize cs
 tokenize ('=':'=':cs) = TEquals : tokenize cs
+tokenize ('#':cs) = tokenize (dropWhile (/= '\n') cs) -- Skip comments
 tokenize (c:cs)
     
     | c `elem` " \t\n" = tokenize cs
@@ -42,13 +46,17 @@ tokenize (c:cs)
     | isDigit c =
         let (num, rest) = span isDigit (c:cs)
         in TLitInt (read num) : tokenize rest
-    | c == '=' && head cs == '=' = TEquals : tokenize (tail cs)
-    | c == '=' = TAssign : tokenize cs
+    | c == '=' = case cs of
+        ('=':rest) -> TEquals : tokenize rest
+        _ -> TAssign : tokenize cs
     | c == '+' = TPlus : tokenize cs
     | c == '<' = TLessThan : tokenize cs
     | c == '\\' = TLam : tokenize cs
     | c == '(' = LParen : tokenize cs
     | c == ')' = RParen : tokenize cs
+    | c == '{' = LBrace : tokenize cs
+    | c == '}' = RBrace : tokenize cs
+    | c == ',' = TComma : tokenize cs
     | otherwise = tokenize cs -- Skip unknown characters
 
 keyword :: String -> Token

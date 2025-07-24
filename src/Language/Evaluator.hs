@@ -19,16 +19,19 @@ eval :: Expr -> Context -> IO (Expr, Context)
 eval (Var name) ctx = case lookup name ctx of
   Just val -> return (val, ctx)
   Nothing -> throwIO $ GokuError ("Unbound variable: " ++ name)
-eval (Lam name t body) ctx = return (Lam name t body, ctx)
+eval (Lam params t body) ctx = return (Lam params t body, ctx)
 eval (App func arg) ctx = do
   (evalFunc, ctx') <- eval func ctx
   (evalArg, ctx'') <- eval arg ctx'
   case evalFunc of
-    Lam name _ body -> do
-      -- Create a new context with the argument bound to the lambda's parameter
+    Lam [] _ body -> eval body ctx'' -- No parameters left, evaluate body
+    Lam (name:restParams) funcType body -> do
+      -- Create a new context with the argument bound to the first parameter
       let newCtx = (name, evalArg) : ctx''
-      -- Evaluate the lambda's body in the new context
-      eval body newCtx
+      -- If there are more parameters, create a partial application
+      case restParams of
+        [] -> eval body newCtx -- This was the last parameter, evaluate body
+        _ -> return (Lam restParams funcType body, newCtx) -- Return partial application
     _ -> throwIO $ GokuError "Cannot apply non-function"
 eval (LitInt n) ctx = return (LitInt n, ctx)
 eval (LitBool b) ctx = return (LitBool b, ctx)
@@ -66,12 +69,13 @@ evalStmt (Set name expr) ctx = do
   return newCtx
   where
     updateContext :: String -> Expr -> Context -> IO Context
-    updateContext name val [] = throwIO $ GokuError ("Unbound variable for set: " ++ name)
-    updateContext name val ((n, v):rest) = 
-      if n == name then return ((name, val) : rest)
+    updateContext varName _varVal [] = throwIO $ GokuError ("Unbound variable for set: " ++ varName)
+    updateContext varName varVal ((n, v):rest) = 
+      if n == varName then return ((varName, varVal) : rest)
       else do
-        updatedRest <- updateContext name val rest
+        updatedRest <- updateContext varName varVal rest
         return ((n, v) : updatedRest)
+evalStmt (Block stmts) ctx = evalStmts stmts ctx
 evalStmt (If cond thenBranch elseBranch) ctx = do
   (val, ctx') <- eval cond ctx
   case val of
@@ -96,6 +100,13 @@ evalStmt (Assert expr) ctx = do
     LitBool True -> return ctx'
     LitBool False -> throwIO $ GokuError "Assertion failed!"
     _ -> throwIO $ GokuError "Assertion must be a boolean"
+
+-- Helper function to evaluate a list of statements
+evalStmts :: [Stmt] -> Context -> IO Context
+evalStmts [] ctx = return ctx
+evalStmts (stmt:rest) ctx = do
+  ctx' <- evalStmt stmt ctx
+  evalStmts rest ctx'
 
 -- A simple program evaluator for the language
 evalProgram :: Program -> Context -> IO Context

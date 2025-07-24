@@ -13,7 +13,7 @@ data Type = TInt | TBool | TFun Type Type
 
 data Expr
   = Var String
-  | Lam String Type Expr
+  | Lam [String] Type Expr -- Support multiple parameters
   | App Expr Expr
   | LitInt Int
   | LitBool Bool
@@ -30,6 +30,7 @@ data Stmt
   | While Expr Stmt
   | Return Expr
   | Assert Expr
+  | Block [Stmt] -- Support block statements
   deriving (Show, Eq)   
 
 data Program = Program [Stmt]

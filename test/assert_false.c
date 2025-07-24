@@ -4,6 +4,7 @@
 
 void assert_goku(bool condition, const char* message);
 
+
 int main() {
     // Context for variables (simple for now, could be a hash map)
     // For simplicity, all variables are int for now.
