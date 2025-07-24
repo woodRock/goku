@@ -1,4 +1,0 @@
-let x = 0
-while x = 0 do
-  let x = 1
-assert true

@@ -13,6 +13,8 @@ data Token
   | TLitBool Bool
   | TLet
   | TAssign
+  | TEquals
+  | TPlus
   | TIf
   | TThen
   | TElse
@@ -20,15 +22,19 @@ data Token
   | TDo
   | TReturn
   | TAssert
+  | TSet
   | LParen
   | RParen
+  | TLessThan
   | TEOF
   deriving (Show, Eq)
 
 tokenize :: String -> [Token]
 tokenize [] = [TEOF]
 tokenize ('-':'>':cs) = TArrow : tokenize cs
+tokenize ('=':'=':cs) = TEquals : tokenize cs
 tokenize (c:cs)
+    
     | c `elem` " \t\n" = tokenize cs
     | isAlpha c =
         let (var, rest) = span isAlphaNum (c:cs)
@@ -36,7 +42,10 @@ tokenize (c:cs)
     | isDigit c =
         let (num, rest) = span isDigit (c:cs)
         in TLitInt (read num) : tokenize rest
+    | c == '=' && head cs == '=' = TEquals : tokenize (tail cs)
     | c == '=' = TAssign : tokenize cs
+    | c == '+' = TPlus : tokenize cs
+    | c == '<' = TLessThan : tokenize cs
     | c == '\\' = TLam : tokenize cs
     | c == '(' = LParen : tokenize cs
     | c == ')' = RParen : tokenize cs
@@ -53,4 +62,5 @@ keyword "return" = TReturn
 keyword "true" = TLitBool True
 keyword "false" = TLitBool False
 keyword "assert" = TAssert
+keyword "set" = TSet
 keyword s = TVar s

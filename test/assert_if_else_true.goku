@@ -1,1 +1,4 @@
-if true then assert true else assert false
+if true then 
+    assert true 
+else 
+    assert false

@@ -1,0 +1,4 @@
+let x = 0
+while x < 5 do
+    set x = x + 1 
+assert (x == 5)

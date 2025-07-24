@@ -15,6 +15,6 @@ jobs:
       - name: Install dependencies
         run: stack setup && stack build
       - name: Run tests
-        run: stack test --fast --no-run-benchmarkss
+        run: stack test --fast --no-run-benchmarks
       - name: Run additional tests
         run: ./test/run-tests.sh

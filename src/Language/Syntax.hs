@@ -17,11 +17,15 @@ data Expr
   | App Expr Expr
   | LitInt Int
   | LitBool Bool
+  | Equals Expr Expr
+  | Add Expr Expr
+  | LessThan Expr Expr
   deriving (Show, Eq)
 
 data Stmt
   = ExprStmt Expr
   | Let String Type Expr
+  | Set String Expr
   | If Expr Stmt Stmt
   | While Expr Stmt
   | Return Expr
@@ -30,3 +34,4 @@ data Stmt
 
 data Program = Program [Stmt]
   deriving (Show, Eq)
+  
