@@ -2,13 +2,19 @@
 module Main (main) where
 
 import System.Environment (getArgs)
-import System.IO (readFile)
+import System.IO (readFile, writeFile)
 import Language.Parser (runParser, parseProgram)
-import Language.Evaluator (evalProgram, GokuError(..))
+import Language.Evaluator (GokuError(..))
+import Language.Compiler.Optimizer (optimizeProgram)
+import Language.Compiler.CodeGen (generateC)
 import Control.Exception (catch, SomeException, fromException)
-import System.Exit (exitFailure)
+import System.Exit (exitFailure, ExitCode(ExitSuccess, ExitFailure))
+import System.Process (readProcessWithExitCode)
+import System.Directory (removeFile)
+import System.FilePath (takeBaseName, takeDirectory)
 
-main :: IO ()
+-- Main entry point for the Goku interpreter
+-- It reads a file containing Goku code, parses it, and evaluates the program.
 main = do
   args <- getArgs
   case args of
@@ -21,8 +27,37 @@ main = do
         Right program -> do
           catch (
             do
-              _ <- evalProgram program [] -- Evaluate the program
-              putStrLn "Program executed successfully."
+              let optimizedProgram = optimizeProgram program
+              let cCode = generateC optimizedProgram
+              let fileDir = takeDirectory filePath
+              let baseName = takeBaseName filePath
+              let cFileName = fileDir ++ "/" ++ baseName ++ ".c"
+              let executableName = fileDir ++ "/" ++ baseName ++ ".out"
+
+              writeFile cFileName cCode
+              putStrLn $ "Generated C code to " ++ cFileName
+
+              -- Compile the C code
+              (exitCode, stdout, stderr) <- readProcessWithExitCode "gcc" [cFileName, "-o", executableName] ""
+              case exitCode of
+                ExitSuccess -> do
+                  putStrLn $ "Compiled C code to " ++ executableName
+                  -- Run the compiled executable
+                  (runExitCode, runStdout, runStderr) <- readProcessWithExitCode ("./" ++ executableName) [] ""
+                  case runExitCode of
+                    ExitSuccess -> do
+                      putStrLn "Program executed successfully."
+                      putStrLn runStdout
+                    ExitFailure _ -> do
+                      putStrLn $ "Program execution failed: " ++ runStderr
+                      exitFailure
+                ExitFailure _ -> do
+                  putStrLn $ "C compilation failed: " ++ stderr
+                  exitFailure
+
+              -- Clean up generated files
+              removeFile cFileName
+              removeFile executableName
             ) (
             \e -> case fromException e of
               Just (gokuError :: GokuError) -> do
