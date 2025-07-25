@@ -1,0 +1,22 @@
+# Test print statements
+print 42
+print (5 + 3)
+print (10 * 2)
+
+let x = 15
+print x
+
+# Test with function
+doubleNum = (n) -> n * 2
+print (doubleNum(7))
+
+# Test with factorial from recursion.goku
+factorial = (n) -> {
+    if n == 0 then {
+        1 
+    } else {
+        return n * factorial(n - 1)
+    }
+}
+
+print (factorial(4))

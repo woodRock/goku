@@ -77,6 +77,10 @@ parseAdditionAndSubtraction = do
                 consume TMinus
                 right <- parseMultiplicationAndDivision
                 parseRest (Sub left right)
+            TConcat -> do
+                consume TConcat
+                right <- parseMultiplicationAndDivision
+                parseRest (Concat left right)
             _ -> return left
 
 parseMultiplicationAndDivision :: Parser Expr
@@ -160,6 +164,7 @@ isNewStatement (TIf : _) = True
 isNewStatement (TWhile : _) = True
 isNewStatement (TReturn : _) = True
 isNewStatement (TAssert : _) = True
+isNewStatement (TPrint : _) = True
 isNewStatement [TEOF] = True
 isNewStatement [] = True
 isNewStatement _ = False
@@ -172,6 +177,7 @@ isBinaryOperator TMinus = True
 isBinaryOperator TMult = True
 isBinaryOperator TDiv = True
 isBinaryOperator TIntDiv = True
+isBinaryOperator TConcat = True
 isBinaryOperator _ = False
 
 parseBinaryOp :: Parser Expr -> Token -> (Expr -> Expr -> Expr) -> Parser Expr
@@ -198,6 +204,9 @@ parsePrimary = do
         TLitBool b -> do
             consume t
             return $ LitBool b
+        TLitString s -> do
+            consume t
+            return $ LitString s
         TVar s -> do
             consume t
             return $ Var s
@@ -344,6 +353,10 @@ parseStmt = do
             consume TAssert
             expr <- parseExpr
             return $ Assert expr
+        TPrint -> do
+            consume TPrint
+            expr <- parseExpr
+            return $ Print expr
         -- If the statement starts with a variable, we need to disambiguate.
         TVar _ -> do
             tokens <- getTokens

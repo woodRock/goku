@@ -1,0 +1,23 @@
+// Demonstration of string equality with type system
+
+// String variable comparisons
+let str1 = "hello"
+let str2 = "world"
+let str3 = "hello"
+
+// These should use strcmp() in generated C code
+print (str1 == str2)  // false
+print (str1 == str3)  // true
+
+// String literal comparisons
+print ("hello" == "world")  // false
+print ("hello" == "hello")  // true
+
+// Mixed string literal and variable
+print (str1 == "hello")  // true
+print ("world" == str2)  // true
+
+// Integer comparisons for contrast
+let num1 = 42
+let num2 = 42
+print (num1 == num2)  // true (should use == in C code)

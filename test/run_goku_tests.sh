@@ -11,7 +11,7 @@ for goku_file in "$TEST_DIR"/*.goku; do
     output=$(stack exec goku-exe -- --compile "$goku_file" 2>&1)
     exit_code=$?
 
-    if [[ "$(basename "$goku_file")" == "assert_false.goku" ]]; then
+    if [[ "$(basename "$goku_file")" == "assert_basic_false.goku" ]]; then
         if [[ $exit_code -ne 0 && "$output" == *"Assertion failed!"* ]]; then
             echo -e "  ${GREEN}PASS${NC}: Expected failure for $(basename "$goku_file")"
         else

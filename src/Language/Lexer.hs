@@ -11,6 +11,7 @@ data Token
   | TArrow
   | TLitInt Int
   | TLitBool Bool
+  | TLitString String
   | TLet
   | TAssign
   | TEquals
@@ -19,6 +20,7 @@ data Token
   | TMult
   | TDiv
   | TIntDiv
+  | TConcat
   | TIf
   | TThen
   | TElse
@@ -26,6 +28,7 @@ data Token
   | TDo
   | TReturn
   | TAssert
+  | TPrint
   | TSet
   | LParen
   | RParen
@@ -42,6 +45,8 @@ tokenize ('-':'>':cs) = TArrow : tokenize cs
 tokenize ('=':'=':cs) = TEquals : tokenize cs
 tokenize ('/':'/':cs) = TIntDiv : tokenize cs
 tokenize ('#':cs) = tokenize (dropWhile (/= '\n') cs) -- Skip comments
+tokenize ('"':cs) = let (str, rest) = parseString cs in TLitString str : tokenize rest
+tokenize ('+':'+':cs) = TConcat : tokenize cs
 tokenize (c:cs)
     
     | c `elem` " \t\n" = tokenize cs
@@ -78,5 +83,26 @@ keyword "return" = TReturn
 keyword "true" = TLitBool True
 keyword "false" = TLitBool False
 keyword "assert" = TAssert
+keyword "print" = TPrint
 keyword "set" = TSet
 keyword s = TVar s
+
+-- Parse a string literal until the closing quote
+parseString :: [Char] -> (String, [Char])
+parseString [] = error "Unterminated string literal"
+parseString ('"':cs) = ("", cs)  -- Empty string or end of string
+parseString ('\\':c:cs) = 
+  let (str, rest) = parseString cs
+  in (escapeChar c : str, rest)
+parseString (c:cs) = 
+  let (str, rest) = parseString cs
+  in (c : str, rest)
+
+-- Handle escape sequences
+escapeChar :: Char -> Char
+escapeChar 'n' = '\n'
+escapeChar 't' = '\t'
+escapeChar 'r' = '\r'
+escapeChar '\\' = '\\'
+escapeChar '"' = '"'
+escapeChar c = c  -- For any other character, just return it as-is

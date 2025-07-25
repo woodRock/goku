@@ -1,0 +1,8 @@
+# Simple print test without reserved keywords
+print 42
+print (5 + 3)
+print (10 * 2)
+
+# Test with simple calculations
+print (100 / 4)
+print (7 * 6)

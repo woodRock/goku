@@ -19,6 +19,8 @@ optimizeStmt (While cond body) =
     While (optimizeExpr cond) (optimizeStmt body)
 optimizeStmt (Return expr) = Return (optimizeExpr expr)
 optimizeStmt (Assert expr) = Assert (optimizeExpr expr)
+optimizeStmt (Print expr) = Print (optimizeExpr expr)
+optimizeStmt (Block stmts) = Block (map optimizeStmt stmts)
 
 -- | Optimizes a single expression (e.g., constant folding).
 optimizeExpr :: Expr -> Expr

@@ -8,7 +8,7 @@ module Language.Syntax
     , Program(..)
     ) where
 
-data Type = TInt | TBool | TFun Type Type
+data Type = TInt | TBool | TString | TFun Type Type
   deriving (Show, Eq)
 
 data Expr
@@ -17,12 +17,14 @@ data Expr
   | App Expr Expr
   | LitInt Int
   | LitBool Bool
+  | LitString String
   | Equals Expr Expr
   | Add Expr Expr
   | Sub Expr Expr
   | Mult Expr Expr
   | Div Expr Expr
   | IntDiv Expr Expr
+  | Concat Expr Expr -- String concatenation
   | LessThan Expr Expr
   | IfExpr Expr Expr Expr -- Conditional expression: if condition then expr1 else expr2
   deriving (Show, Eq)
@@ -35,6 +37,7 @@ data Stmt
   | While Expr Stmt
   | Return Expr
   | Assert Expr
+  | Print Expr -- Print statement
   | Block [Stmt] -- Support block statements
   deriving (Show, Eq)   
 

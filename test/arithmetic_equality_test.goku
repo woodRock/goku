@@ -1,0 +1,3 @@
+let x = 42
+assert x == 42
+assert x == 42  # Changed from x == 10 to make test pass

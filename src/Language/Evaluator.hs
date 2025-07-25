@@ -35,12 +35,14 @@ eval (App func arg) ctx = do
     _ -> throwIO $ GokuError "Cannot apply non-function"
 eval (LitInt n) ctx = return (LitInt n, ctx)
 eval (LitBool b) ctx = return (LitBool b, ctx)
+eval (LitString s) ctx = return (LitString s, ctx)
 eval (Equals e1 e2) ctx = do
   (val1, ctx') <- eval e1 ctx
   (val2, ctx'') <- eval e2 ctx'
   case (val1, val2) of
     (LitInt n1, LitInt n2) -> return (LitBool (n1 == n2), ctx'')
     (LitBool b1, LitBool b2) -> return (LitBool (b1 == b2), ctx'')
+    (LitString s1, LitString s2) -> return (LitBool (s1 == s2), ctx'')
     _ -> throwIO $ GokuError "Cannot compare values of different types or non-primitive types"
 eval (Add e1 e2) ctx = do
   (val1, ctx') <- eval e1 ctx
@@ -84,6 +86,12 @@ eval (LessThan e1 e2) ctx = do
   case (val1, val2) of
     (LitInt n1, LitInt n2) -> return (LitBool (n1 < n2), ctx'')
     _ -> throwIO $ GokuError "Cannot compare non-integer values with <"
+eval (Concat e1 e2) ctx = do
+  (val1, ctx') <- eval e1 ctx
+  (val2, ctx'') <- eval e2 ctx'
+  case (val1, val2) of
+    (LitString s1, LitString s2) -> return (LitString (s1 ++ s2), ctx'')
+    _ -> throwIO $ GokuError "Cannot concatenate non-string values"
 eval (IfExpr cond thenExpr elseExpr) ctx = do
   (condVal, ctx') <- eval cond ctx
   case condVal of
@@ -136,6 +144,16 @@ evalStmt (Assert expr) ctx = do
     LitBool True -> return ctx'
     LitBool False -> throwIO $ GokuError "Assertion failed!"
     _ -> throwIO $ GokuError "Assertion must be a boolean"
+evalStmt (Print expr) ctx = do
+  (val, ctx') <- eval expr ctx
+  putStrLn $ prettyPrintValue val
+  return ctx'
+  where
+    prettyPrintValue :: Expr -> String
+    prettyPrintValue (LitInt n) = show n
+    prettyPrintValue (LitBool True) = "true"
+    prettyPrintValue (LitBool False) = "false"
+    prettyPrintValue otherExpr = show otherExpr
 
 -- Helper function to evaluate a list of statements
 evalStmts :: [Stmt] -> Context -> IO Context

@@ -1,0 +1,5 @@
+let greeting = "hello"
+let name = "world"
+let message = greeting ++ " " ++ name
+print message
+assert message == "hello world"

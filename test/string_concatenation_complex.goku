@@ -1,0 +1,7 @@
+let s1 = "Hello"
+let s2 = "World"
+let s3 = s1 ++ ", " ++ s2 ++ "!"
+print s3
+assert s3 == "Hello, World!"
+assert s1 == "Hello"
+assert s2 == "World"

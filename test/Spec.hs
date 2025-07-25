@@ -39,6 +39,20 @@ main = hspec $ do
       it "parses less than" $ do
         runParser parseExpr "x < 10" `shouldBe` Right (LessThan (Var "x") (LitInt 10))
 
+    describe "String Expressions" $ do
+      it "parses string literals" $ do
+        runParser parseExpr "\"hello\"" `shouldBe` Right (LitString "hello")
+      it "parses empty string" $ do
+        runParser parseExpr "\"\"" `shouldBe` Right (LitString "")
+      it "parses string with spaces" $ do
+        runParser parseExpr "\"hello world\"" `shouldBe` Right (LitString "hello world")
+      it "parses string concatenation" $ do
+        runParser parseExpr "\"hello\" ++ \"world\"" `shouldBe` Right (Concat (LitString "hello") (LitString "world"))
+      it "parses string concatenation with variables" $ do
+        runParser parseExpr "x ++ \" world\"" `shouldBe` Right (Concat (Var "x") (LitString " world"))
+      it "parses string equality" $ do
+        runParser parseExpr "\"test\" == \"test\"" `shouldBe` Right (Equals (LitString "test") (LitString "test"))
+
     describe "Lambda Expressions" $ do
       it "parses single parameter lambda" $ do
         runParser parseExpr "(x) -> x" `shouldBe` Right (Lam ["x"] TInt (Var "x"))
@@ -52,6 +66,9 @@ main = hspec $ do
         runParser parseStmt "x = 10" `shouldBe` Right (Set "x" (LitInt 10))
       it "parses assert statements" $ do
         runParser parseStmt "assert (true)" `shouldBe` Right (Assert (LitBool True))
+      it "parses print statements" $ do
+        runParser parseStmt "print 42" `shouldBe` Right (Print (LitInt 42))
+        runParser parseStmt "print (2 + 3)" `shouldBe` Right (Print (Add (LitInt 2) (LitInt 3)))
 
   describe "Goku Language Evaluator" $ do
     describe "Basic Expression Evaluation" $ do
@@ -90,6 +107,20 @@ main = hspec $ do
         (val, _) <- eval (App (Lam ["x"] TInt (Var "x")) (LitInt 5)) []
         val `shouldBe` LitInt 5
 
+    describe "String Evaluation" $ do
+      it "evaluates string literals" $ do
+        (val, _) <- eval (LitString "hello") []
+        val `shouldBe` LitString "hello"
+      it "evaluates string concatenation" $ do
+        (val, _) <- eval (Concat (LitString "hello") (LitString " world")) []
+        val `shouldBe` LitString "hello world"
+      it "evaluates string equality" $ do
+        (val, _) <- eval (Equals (LitString "test") (LitString "test")) []
+        val `shouldBe` LitBool True
+      it "evaluates string inequality" $ do
+        (val, _) <- eval (Equals (LitString "test") (LitString "other")) []
+        val `shouldBe` LitBool False
+
     describe "Statement Evaluation" $ do
       it "evaluates let statements" $ do
         newCtx <- evalStmt (Let "x" TInt (LitInt 5)) []
@@ -99,6 +130,9 @@ main = hspec $ do
         newCtx `shouldBe` [("x", LitInt 10)]
       it "evaluates successful assert statements" $ do
         evalStmt (Assert (LitBool True)) [] `shouldReturn` []
+      it "evaluates print statements" $ do
+        evalStmt (Print (LitInt 42)) [] `shouldReturn` []
+        evalStmt (Print (LitBool True)) [] `shouldReturn` []
       it "evaluates failed assert statements" $ do
         result <- try (evalStmt (Assert (LitBool False)) []) :: IO (Either GokuError Context)
         case result of
