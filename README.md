@@ -14,7 +14,7 @@ A functional programming language with C compilation and interactive REPL suppor
 - **Modern Language Features**: Pattern matching, assertions, and print statements
 - **String Operations**: Full string support with concatenation and type-safe equality
 - **Interactive Development**: REPL mode for rapid prototyping and testing
-- **Comprehensive Testing**: 46+ integration tests covering all language features
+- **Comprehensive Testing**: 56+ integration tests covering all language features
 
 ## Data Types
 
@@ -225,7 +225,7 @@ Run the comprehensive test suite:
 # Haskell unit tests
 stack test
 
-# Integration tests (46+ organized test cases)
+# Integration tests (56+ organized test cases)
 ./test/run_goku_tests.sh
 
 # Test specific features
@@ -260,7 +260,7 @@ app/
 └── Main.hs               # CLI entry point
 test/
 ├── Spec.hs               # Unit tests
-├── *.goku                # 46+ organized test programs
+├── *.goku                # 56+ organized test programs
 └── run_goku_tests.sh     # Integration test suite
 ```
 
