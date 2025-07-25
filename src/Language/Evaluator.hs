@@ -105,7 +105,7 @@ evalStmt (Set name expr) ctx = do
   return newCtx
   where
     updateContext :: String -> Expr -> Context -> IO Context
-    updateContext varName _varVal [] = throwIO $ GokuError ("Unbound variable for set: " ++ varName)
+    updateContext varName varVal [] = return [(varName, varVal)]  -- Create new binding if not found
     updateContext varName varVal ((n, v):rest) = 
       if n == varName then return ((varName, varVal) : rest)
       else do
