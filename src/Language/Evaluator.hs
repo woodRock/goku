@@ -60,6 +60,24 @@ eval (Mult e1 e2) ctx = do
   case (val1, val2) of
     (LitInt n1, LitInt n2) -> return (LitInt (n1 * n2), ctx'')
     _ -> throwIO $ GokuError "Cannot multiply non-integer values"
+eval (Div e1 e2) ctx = do
+  (val1, ctx') <- eval e1 ctx
+  (val2, ctx'') <- eval e2 ctx'
+  case (val1, val2) of
+    (LitInt n1, LitInt n2) -> 
+      if n2 == 0 
+      then throwIO $ GokuError "Division by zero"
+      else return (LitInt (n1 `div` n2), ctx'')  -- Integer division for now
+    _ -> throwIO $ GokuError "Cannot divide non-integer values"
+eval (IntDiv e1 e2) ctx = do
+  (val1, ctx') <- eval e1 ctx
+  (val2, ctx'') <- eval e2 ctx'
+  case (val1, val2) of
+    (LitInt n1, LitInt n2) -> 
+      if n2 == 0 
+      then throwIO $ GokuError "Division by zero"
+      else return (LitInt (n1 `div` n2), ctx'')  -- Floor division (rounds toward negative infinity)
+    _ -> throwIO $ GokuError "Cannot divide non-integer values"
 eval (LessThan e1 e2) ctx = do
   (val1, ctx') <- eval e1 ctx
   (val2, ctx'') <- eval e2 ctx'

@@ -62,13 +62,32 @@ parseLessThan :: Parser Expr
 parseLessThan = parseBinaryOp parseSubtraction TLessThan LessThan
 
 parseAddition :: Parser Expr
-parseAddition = parseBinaryOp parseMultiplication TPlus Add
+parseAddition = parseBinaryOp parseMultiplicationAndDivision TPlus Add
 
 parseSubtraction :: Parser Expr  
 parseSubtraction = parseBinaryOp parseAddition TMinus Sub
 
-parseMultiplication :: Parser Expr
-parseMultiplication = parseBinaryOp parseApplication TMult Mult
+parseMultiplicationAndDivision :: Parser Expr
+parseMultiplicationAndDivision = do
+    left <- parseApplication
+    parseRest left
+  where
+    parseRest left = do
+        t <- peek
+        case t of
+            TMult -> do
+                consume TMult
+                right <- parseApplication
+                parseRest (Mult left right)
+            TDiv -> do
+                consume TDiv
+                right <- parseApplication
+                parseRest (Div left right)
+            TIntDiv -> do
+                consume TIntDiv
+                right <- parseApplication
+                parseRest (IntDiv left right)
+            _ -> return left
 
 parseApplication :: Parser Expr
 parseApplication = do
@@ -139,6 +158,8 @@ isBinaryOperator TLessThan = True
 isBinaryOperator TPlus = True
 isBinaryOperator TMinus = True
 isBinaryOperator TMult = True
+isBinaryOperator TDiv = True
+isBinaryOperator TIntDiv = True
 isBinaryOperator _ = False
 
 parseBinaryOp :: Parser Expr -> Token -> (Expr -> Expr -> Expr) -> Parser Expr

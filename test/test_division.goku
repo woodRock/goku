@@ -1,0 +1,14 @@
+# Test division operators
+
+# Regular division
+divide = (x, y) -> x / y
+
+# Integer division  
+intdivide = (x, y) -> x // y
+
+# Test both operators
+assert (divide(10, 2) == 5)
+assert (divide(10, 3) == 3)  # Should truncate to 3
+assert (intdivide(10, 2) == 5)
+assert (intdivide(10, 3) == 3)  # Should also be 3
+assert (intdivide(7, 2) == 3)   # 7 // 2 = 3

@@ -100,6 +100,8 @@ genExpr (Var name) = name
 genExpr (Add e1 e2) = "(" ++ genExpr e1 ++ " + " ++ genExpr e2 ++ ")"
 genExpr (Sub e1 e2) = "(" ++ genExpr e1 ++ " - " ++ genExpr e2 ++ ")"
 genExpr (Mult e1 e2) = "(" ++ genExpr e1 ++ " * " ++ genExpr e2 ++ ")"
+genExpr (Div e1 e2) = "(" ++ genExpr e1 ++ " / " ++ genExpr e2 ++ ")"
+genExpr (IntDiv e1 e2) = "(" ++ genExpr e1 ++ " / " ++ genExpr e2 ++ ")"  -- Same as Div for integers in C
 genExpr (Equals e1 e2) = "(" ++ genExpr e1 ++ " == " ++ genExpr e2 ++ ")"
 genExpr (LessThan e1 e2) = "(" ++ genExpr e1 ++ " < " ++ genExpr e2 ++ ")"
 genExpr (IfExpr cond thenExpr elseExpr) = 

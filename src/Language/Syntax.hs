@@ -21,6 +21,8 @@ data Expr
   | Add Expr Expr
   | Sub Expr Expr
   | Mult Expr Expr
+  | Div Expr Expr
+  | IntDiv Expr Expr
   | LessThan Expr Expr
   | IfExpr Expr Expr Expr -- Conditional expression: if condition then expr1 else expr2
   deriving (Show, Eq)

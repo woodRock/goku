@@ -1,0 +1,4 @@
+# Simple division test
+assert (10 / 2 == 5)
+assert (10 // 3 == 3)
+assert (9 / 3 == 3)

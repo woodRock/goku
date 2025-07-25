@@ -17,6 +17,8 @@ data Token
   | TPlus
   | TMinus
   | TMult
+  | TDiv
+  | TIntDiv
   | TIf
   | TThen
   | TElse
@@ -38,6 +40,7 @@ tokenize :: String -> [Token]
 tokenize [] = [TEOF]
 tokenize ('-':'>':cs) = TArrow : tokenize cs
 tokenize ('=':'=':cs) = TEquals : tokenize cs
+tokenize ('/':'/':cs) = TIntDiv : tokenize cs
 tokenize ('#':cs) = tokenize (dropWhile (/= '\n') cs) -- Skip comments
 tokenize (c:cs)
     
@@ -54,6 +57,7 @@ tokenize (c:cs)
     | c == '+' = TPlus : tokenize cs
     | c == '-' = TMinus : tokenize cs
     | c == '*' = TMult : tokenize cs
+    | c == '/' = TDiv : tokenize cs
     | c == '<' = TLessThan : tokenize cs
     | c == '\\' = TLam : tokenize cs
     | c == '(' = LParen : tokenize cs
