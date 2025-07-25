@@ -1,8 +1,0 @@
-# Test print with basic functions
-print 1
-print 2
-
-func = (x) -> x + 1
-print (func(5))
-
-print 3

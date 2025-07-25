@@ -1,3 +1,0 @@
-test = (n) -> test(n)
-
-assert true

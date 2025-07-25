@@ -37,4 +37,4 @@ jobs:
       - name: Test interactive mode
         run: echo -e "2 + 3\n5 * 4\nx = 10\nx\n:quit" | stack exec goku-exe -- --interactive
       - name: Test interpreter mode
-        run: stack exec goku-exe -- --interpret test/function.goku
+        run: stack exec goku-exe -- --interpret test/function_definition_basic.goku
