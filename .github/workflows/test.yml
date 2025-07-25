@@ -6,15 +6,35 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Haskell
-        uses: haskell/actions/setup@v1
+        uses: haskell-actions/setup@v2
         with:
-          ghc-version: 'latest'
-          cabal-version: 'latest'
+          ghc-version: '9.6.7'
+          enable-stack: true
+          stack-version: 'latest'
+      - name: Cache Stack dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.stack
+            .stack-work
+          key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml', 'package.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-stack-
+      - name: Install GCC (for C compilation tests)
+        run: sudo apt-get update && sudo apt-get install -y gcc
       - name: Install dependencies
-        run: stack setup && stack build
-      - name: Run tests
+        run: stack setup && stack build --dependencies-only
+      - name: Build project
+        run: stack build
+      - name: Run Haskell unit tests
         run: stack test --fast --no-run-benchmarks
-      - name: Run additional tests
-        run: ./test/run-tests.sh
+      - name: Make test script executable
+        run: chmod +x ./test/run_goku_tests.sh
+      - name: Run Goku language integration tests
+        run: ./test/run_goku_tests.sh
+      - name: Test interactive mode
+        run: echo -e "2 + 3\n5 * 4\nx = 10\nx\n:quit" | stack exec goku-exe -- --interactive
+      - name: Test interpreter mode
+        run: stack exec goku-exe -- --interpret test/function.goku

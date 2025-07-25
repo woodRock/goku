@@ -8,7 +8,7 @@ TEST_DIR="$(dirname "$0")"
 
 for goku_file in "$TEST_DIR"/*.goku; do
     echo "Running test: $(basename "$goku_file")"
-    output=$(stack run goku-exe "$goku_file" 2>&1)
+    output=$(stack exec goku-exe -- --compile "$goku_file" 2>&1)
     exit_code=$?
 
     if [[ "$(basename "$goku_file")" == "assert_false.goku" ]]; then
