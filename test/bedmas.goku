@@ -1,0 +1,47 @@
+# BEDMAS/PEMDAS Order of Operations Tests
+# Testing: Brackets, Exponents, Division/Multiplication, Addition/Subtraction
+
+# Basic addition and subtraction (left to right)
+assert (1 + 2 - 3 == 0)
+assert (10 - 5 + 2 == 7)
+
+# Multiplication and division have higher precedence than addition/subtraction
+assert (2 + 3 * 4 == 14)        # Should be 2 + (3 * 4) = 2 + 12 = 14
+assert (3 * 4 + 2 == 14)        # Should be (3 * 4) + 2 = 12 + 2 = 14
+assert (10 - 2 * 3 == 4)        # Should be 10 - (2 * 3) = 10 - 6 = 4
+assert (2 * 3 - 4 == 2)         # Should be (2 * 3) - 4 = 6 - 4 = 2
+
+# Division has same precedence as multiplication
+assert (8 / 2 * 3 == 12)        # Should be (8 / 2) * 3 = 4 * 3 = 12
+assert (12 / 3 / 2 == 2)        # Should be (12 / 3) / 2 = 4 / 2 = 2
+assert (2 * 6 / 3 == 4)         # Should be (2 * 6) / 3 = 12 / 3 = 4
+
+# Integer division has same precedence as regular division
+assert (10 // 3 * 2 == 6)       # Should be (10 // 3) * 2 = 3 * 2 = 6
+assert (15 / 3 // 2 == 2)       # Should be (15 / 3) // 2 = 5 // 2 = 2
+
+# Mixed operations
+assert (1 + 2 * 3 - 4 == 3)     # Should be 1 + (2 * 3) - 4 = 1 + 6 - 4 = 3
+assert (20 / 4 + 2 * 3 == 11)   # Should be (20 / 4) + (2 * 3) = 5 + 6 = 11
+assert (2 + 3 * 4 / 2 == 8)     # Should be 2 + ((3 * 4) / 2) = 2 + (12 / 2) = 2 + 6 = 8
+
+# Parentheses override natural precedence
+assert ((2 + 3) * 4 == 20)      # Should be 5 * 4 = 20
+assert (2 * (3 + 4) == 14)      # Should be 2 * 7 = 14
+assert ((10 - 2) / 4 == 2)      # Should be 8 / 4 = 2
+assert (20 / (2 + 3) == 4)      # Should be 20 / 5 = 4
+
+# Nested parentheses
+assert ((2 + 3) * (4 - 1) == 15) # Should be 5 * 3 = 15
+assert ((10 / 2) + (3 * 2) == 11) # Should be 5 + 6 = 11
+
+# Complex expressions
+assert (2 + 3 * 4 - 5 / 5 == 13)     # Should be 2 + 12 - 1 = 13
+assert (1 + 2 * 3 + 4 * 5 - 6 == 21) # Should be 1 + 6 + 20 - 6 = 21
+
+# Test with function calls to ensure precedence works in function contexts
+precedencetest = (a, b, c) -> a + b * c
+assert (precedencetest(2, 3, 4) == 14)  # Should be 2 + (3 * 4) = 14
+
+complexcalc = (x) -> 2 * x + 3 * x - x / 2
+assert (complexcalc(4) == 18)  # Should be 2*4 + 3*4 - 4/2 = 8 + 12 - 2 = 18

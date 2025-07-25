@@ -59,13 +59,25 @@ parseEquality :: Parser Expr
 parseEquality = parseBinaryOp parseLessThan TEquals Equals
 
 parseLessThan :: Parser Expr
-parseLessThan = parseBinaryOp parseSubtraction TLessThan LessThan
+parseLessThan = parseBinaryOp parseAdditionAndSubtraction TLessThan LessThan
 
-parseAddition :: Parser Expr
-parseAddition = parseBinaryOp parseMultiplicationAndDivision TPlus Add
-
-parseSubtraction :: Parser Expr  
-parseSubtraction = parseBinaryOp parseAddition TMinus Sub
+parseAdditionAndSubtraction :: Parser Expr
+parseAdditionAndSubtraction = do
+    left <- parseMultiplicationAndDivision
+    parseRest left
+  where
+    parseRest left = do
+        t <- peek
+        case t of
+            TPlus -> do
+                consume TPlus
+                right <- parseMultiplicationAndDivision
+                parseRest (Add left right)
+            TMinus -> do
+                consume TMinus
+                right <- parseMultiplicationAndDivision
+                parseRest (Sub left right)
+            _ -> return left
 
 parseMultiplicationAndDivision :: Parser Expr
 parseMultiplicationAndDivision = do

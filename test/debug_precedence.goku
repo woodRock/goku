@@ -1,0 +1,6 @@
+# Simple BEDMAS verification
+assert (2 + 3 * 4 == 14)       # Multiplication before addition: 2 + (3*4) = 14
+assert (10 - 2 * 3 == 4)       # Multiplication before subtraction: 10 - (2*3) = 4  
+assert (10 - 5 + 2 == 7)       # Left-to-right for same precedence: (10-5) + 2 = 7
+assert (8 / 2 * 3 == 12)       # Left-to-right for multiplication/division: (8/2) * 3 = 12
+assert ((2 + 3) * 4 == 20)     # Parentheses override: (2+3) * 4 = 20
