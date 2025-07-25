@@ -98,8 +98,12 @@ genExpr (LitInt n) = show n
 genExpr (LitBool b) = if b then "true" else "false"
 genExpr (Var name) = name
 genExpr (Add e1 e2) = "(" ++ genExpr e1 ++ " + " ++ genExpr e2 ++ ")"
+genExpr (Sub e1 e2) = "(" ++ genExpr e1 ++ " - " ++ genExpr e2 ++ ")"
+genExpr (Mult e1 e2) = "(" ++ genExpr e1 ++ " * " ++ genExpr e2 ++ ")"
 genExpr (Equals e1 e2) = "(" ++ genExpr e1 ++ " == " ++ genExpr e2 ++ ")"
 genExpr (LessThan e1 e2) = "(" ++ genExpr e1 ++ " < " ++ genExpr e2 ++ ")"
+genExpr (IfExpr cond thenExpr elseExpr) = 
+    "(" ++ genExpr cond ++ " ? " ++ genExpr thenExpr ++ " : " ++ genExpr elseExpr ++ ")"
 -- Lambdas as inline expressions are complex, but when used in assignments they become function definitions
 genExpr (Lam _ _ _) = "/* Lambda expression - should be used in function definition context */"
 genExpr (App func arg) = genFunctionCall func [arg]

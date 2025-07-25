@@ -15,6 +15,8 @@ data Token
   | TAssign
   | TEquals
   | TPlus
+  | TMinus
+  | TMult
   | TIf
   | TThen
   | TElse
@@ -50,6 +52,8 @@ tokenize (c:cs)
         ('=':rest) -> TEquals : tokenize rest
         _ -> TAssign : tokenize cs
     | c == '+' = TPlus : tokenize cs
+    | c == '-' = TMinus : tokenize cs
+    | c == '*' = TMult : tokenize cs
     | c == '<' = TLessThan : tokenize cs
     | c == '\\' = TLam : tokenize cs
     | c == '(' = LParen : tokenize cs

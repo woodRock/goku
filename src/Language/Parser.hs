@@ -59,10 +59,16 @@ parseEquality :: Parser Expr
 parseEquality = parseBinaryOp parseLessThan TEquals Equals
 
 parseLessThan :: Parser Expr
-parseLessThan = parseBinaryOp parseAddition TLessThan LessThan
+parseLessThan = parseBinaryOp parseSubtraction TLessThan LessThan
 
 parseAddition :: Parser Expr
-parseAddition = parseBinaryOp parseApplication TPlus Add
+parseAddition = parseBinaryOp parseMultiplication TPlus Add
+
+parseSubtraction :: Parser Expr  
+parseSubtraction = parseBinaryOp parseAddition TMinus Sub
+
+parseMultiplication :: Parser Expr
+parseMultiplication = parseBinaryOp parseApplication TMult Mult
 
 parseApplication :: Parser Expr
 parseApplication = do
@@ -71,6 +77,11 @@ parseApplication = do
   where
     parseArgs currentFunc = Parser $ \ts ->
         case runParser' peek ts of
+            Right (LParen, _) -> 
+                -- Handle parenthesized function calls like f(x, y)
+                case runParser' parseParenthesizedCall ts of
+                    Right (args, ts') -> Right (foldl App currentFunc args, ts')
+                    Left _ -> Right (currentFunc, ts)
             Right (t, _) ->
                 if isBinaryOperator t || isNewStatement ts
                 then Right (currentFunc, ts)
@@ -78,6 +89,36 @@ parseApplication = do
                     Right (arg, ts') -> runParser' (parseArgs (App currentFunc arg)) ts'
                     Left _ -> Right (currentFunc, ts)
             Left _ -> Right (currentFunc, ts) -- End of input, stop parsing arguments
+
+-- Parse parenthesized function call arguments like (x, y, z)
+parseParenthesizedCall :: Parser [Expr]
+parseParenthesizedCall = do
+    consume LParen
+    args <- parseArgList
+    consume RParen
+    return args
+
+-- Parse comma-separated argument list
+parseArgList :: Parser [Expr]
+parseArgList = do
+    t <- peek
+    case t of
+        RParen -> return [] -- No arguments
+        _ -> do
+            first <- parseExpr
+            rest <- parseRestArgs
+            return (first : rest)
+  where
+    parseRestArgs = Parser $ \ts ->
+        case runParser' peek ts of
+            Right (TComma, _) -> do
+                case runParser' (consume TComma >> parseExpr) ts of
+                    Right (arg, ts') -> 
+                        case runParser' parseRestArgs ts' of
+                            Right (args, ts'') -> Right (arg : args, ts'')
+                            Left _ -> Right ([arg], ts')
+                    Left err -> Left err
+            _ -> Right ([], ts)
 
 -- Check if the current token stream starts a new statement
 isNewStatement :: [Token] -> Bool
@@ -96,6 +137,8 @@ isBinaryOperator :: Token -> Bool
 isBinaryOperator TEquals = True
 isBinaryOperator TLessThan = True
 isBinaryOperator TPlus = True
+isBinaryOperator TMinus = True
+isBinaryOperator TMult = True
 isBinaryOperator _ = False
 
 parseBinaryOp :: Parser Expr -> Token -> (Expr -> Expr -> Expr) -> Parser Expr
@@ -129,8 +172,9 @@ parsePrimary = do
             -- Check if this is a parameter list for a lambda or just a parenthesized expression
             tokens <- getTokens
             case tokens of
-                (LParen : TVar _ : _) -> parseLambdaWithParams
-                (LParen : RParen : _) -> parseLambdaWithParams -- No params
+                (LParen : TVar _ : RParen : TArrow : _) -> parseLambdaWithParams
+                (LParen : TVar _ : TComma : _) -> parseLambdaWithParams  -- Multi-param lambda
+                (LParen : RParen : TArrow : _) -> parseLambdaWithParams -- No params lambda
                 _ -> do
                     consume LParen
                     e <- parseExpr
@@ -146,6 +190,14 @@ parsePrimary = do
                     e <- parseExpr
                     return $ Lam [s] TInt e
                 _ -> parseError "Expected a variable after lambda"
+        TIf -> do
+            consume TIf
+            cond <- parseExpr
+            consume TThen
+            thenExpr <- parseExpr
+            consume TElse
+            elseExpr <- parseExpr
+            return $ IfExpr cond thenExpr elseExpr
         _ -> parseError "Expected a primary expression"
 
 parseLambdaWithParams :: Parser Expr
@@ -154,8 +206,48 @@ parseLambdaWithParams = do
     params <- parseParamList
     consume RParen
     consume TArrow
-    body <- parseExprOrBlock
+    body <- parseLambdaBody
     return $ Lam params TInt body
+
+-- Parse lambda body which can be either an expression or a block
+parseLambdaBody :: Parser Expr
+parseLambdaBody = do
+    t <- peek
+    case t of
+        LBrace -> do
+            stmts <- parseBlock
+            case stmts of
+                [Return expr] -> return expr
+                [If cond (Return thenExpr) (Return elseExpr)] -> 
+                    return $ IfExpr cond thenExpr elseExpr
+                [If cond thenStmt elseStmt] -> do
+                    -- Convert statement-based if to expression-based if
+                    thenExpr <- stmtToExpr thenStmt
+                    elseExpr <- stmtToExpr elseStmt
+                    return $ IfExpr cond thenExpr elseExpr
+                [stmt] -> do
+                    -- Handle any single statement that can be converted to expression
+                    stmtToExpr stmt
+                _ -> parseError "Lambda body must be a single statement that can be converted to an expression"
+        _ -> parseExpr
+
+-- Helper to convert simple statements to expressions
+stmtToExpr :: Stmt -> Parser Expr
+stmtToExpr (Return expr) = return expr
+stmtToExpr (Block [Return expr]) = return expr
+stmtToExpr (Block [If cond (Return thenExpr) (Return elseExpr)]) = 
+    return $ IfExpr cond thenExpr elseExpr
+stmtToExpr (Block [If cond thenStmt elseStmt]) = do
+    -- Handle nested if with block statements
+    thenExpr <- stmtToExpr thenStmt
+    elseExpr <- stmtToExpr elseStmt
+    return $ IfExpr cond thenExpr elseExpr
+stmtToExpr (If cond thenStmt elseStmt) = do
+    -- Handle if statements directly
+    thenExpr <- stmtToExpr thenStmt
+    elseExpr <- stmtToExpr elseStmt
+    return $ IfExpr cond thenExpr elseExpr
+stmtToExpr _ = parseError "Cannot convert complex statement to expression"
 
 parseParamList :: Parser [String]
 parseParamList = do
@@ -178,25 +270,6 @@ parseRestParams = do
             rest <- parseRestParams
             return (name : rest)
         _ -> return []
-
-parseExprOrBlock :: Parser Expr
-parseExprOrBlock = do
-    t <- peek
-    case t of
-        LBrace -> do
-            stmts <- parseBlock
-            -- For function bodies, we need to find the return statement
-            case findReturnExpr stmts of
-                Just expr -> return expr
-                Nothing -> parseError "Function body must return a value"
-        _ -> parseExpr
-
--- Helper function to extract the expression from a return statement in a block
-findReturnExpr :: [Stmt] -> Maybe Expr
-findReturnExpr [] = Nothing
-findReturnExpr [Return expr] = Just expr
-findReturnExpr (Return expr : _) = Just expr
-findReturnExpr (_ : rest) = findReturnExpr rest
 
 -- This is the fixed statement parser.
 parseStmt :: Parser Stmt

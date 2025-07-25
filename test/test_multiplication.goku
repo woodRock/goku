@@ -1,0 +1,4 @@
+# Test basic multiplication
+assert (2 * 3 == 6)
+assert (5 * 4 == 20)
+assert (1 * 1 == 1)

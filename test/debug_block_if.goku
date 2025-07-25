@@ -1,0 +1,10 @@
+# Factorial function using recursion with blocks
+factorial = (n) -> {
+    if (n == 0) then {
+        return 1
+    } else {
+        return n * factorial(n - 1)
+    }
+}
+
+assert (factorial(3) == 6)

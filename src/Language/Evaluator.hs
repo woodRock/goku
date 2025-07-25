@@ -48,12 +48,30 @@ eval (Add e1 e2) ctx = do
   case (val1, val2) of
     (LitInt n1, LitInt n2) -> return (LitInt (n1 + n2), ctx'')
     _ -> throwIO $ GokuError "Cannot add non-integer values"
+eval (Sub e1 e2) ctx = do
+  (val1, ctx') <- eval e1 ctx
+  (val2, ctx'') <- eval e2 ctx'
+  case (val1, val2) of
+    (LitInt n1, LitInt n2) -> return (LitInt (n1 - n2), ctx'')
+    _ -> throwIO $ GokuError "Cannot subtract non-integer values"
+eval (Mult e1 e2) ctx = do
+  (val1, ctx') <- eval e1 ctx
+  (val2, ctx'') <- eval e2 ctx'
+  case (val1, val2) of
+    (LitInt n1, LitInt n2) -> return (LitInt (n1 * n2), ctx'')
+    _ -> throwIO $ GokuError "Cannot multiply non-integer values"
 eval (LessThan e1 e2) ctx = do
   (val1, ctx') <- eval e1 ctx
   (val2, ctx'') <- eval e2 ctx'
   case (val1, val2) of
     (LitInt n1, LitInt n2) -> return (LitBool (n1 < n2), ctx'')
     _ -> throwIO $ GokuError "Cannot compare non-integer values with <"
+eval (IfExpr cond thenExpr elseExpr) ctx = do
+  (condVal, ctx') <- eval cond ctx
+  case condVal of
+    LitBool True -> eval thenExpr ctx'
+    LitBool False -> eval elseExpr ctx'
+    _ -> throwIO $ GokuError "If condition must be a boolean"
 
 -- A simple statement evaluator for the language
 evalStmt :: Stmt -> Context -> IO Context

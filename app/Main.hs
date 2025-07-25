@@ -56,8 +56,8 @@ main = do
                   exitFailure
 
               -- Clean up generated files
-              removeFile cFileName
-              removeFile executableName
+              -- removeFile cFileName
+              -- removeFile executableName
             ) (
             \e -> case fromException e of
               Just (gokuError :: GokuError) -> do

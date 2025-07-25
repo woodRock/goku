@@ -1,0 +1,5 @@
+twice = (x) -> x * 2
+
+test = (n) -> twice n
+
+assert (test(5) == 10)
