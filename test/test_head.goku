@@ -1,0 +1,5 @@
+# Test head function
+let my_list = [1, 2, 3];
+print my_list;
+let first = head my_list;
+print first;

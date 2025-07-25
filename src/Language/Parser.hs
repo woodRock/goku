@@ -56,10 +56,60 @@ parseExpr :: Parser Expr
 parseExpr = parseEquality
 
 parseEquality :: Parser Expr
-parseEquality = parseBinaryOp parseLessThan TEquals Equals
+parseEquality = do
+    left <- parseComparison
+    parseRest left
+  where
+    parseRest left = do
+        t <- peek
+        case t of
+            TEquals -> do
+                consume TEquals
+                right <- parseComparison
+                parseRest (Equals left right)
+            TNotEquals -> do
+                consume TNotEquals
+                right <- parseComparison
+                parseRest (NotEquals left right)
+            _ -> return left
 
-parseLessThan :: Parser Expr
-parseLessThan = parseBinaryOp parseAdditionAndSubtraction TLessThan LessThan
+parseComparison :: Parser Expr
+parseComparison = do
+    left <- parseConsOp
+    parseRest left
+  where
+    parseRest left = do
+        t <- peek
+        case t of
+            TLessThan -> do
+                consume TLessThan
+                right <- parseConsOp
+                parseRest (LessThan left right)
+            TLessThanEqual -> do
+                consume TLessThanEqual
+                right <- parseConsOp
+                parseRest (LessThanEqual left right)
+            TGreaterThan -> do
+                consume TGreaterThan
+                right <- parseConsOp
+                parseRest (GreaterThan left right)
+            TGreaterThanEqual -> do
+                consume TGreaterThanEqual
+                right <- parseConsOp
+                parseRest (GreaterThanEqual left right)
+            _ -> return left
+
+-- Parse cons operator (::) - right associative
+parseConsOp :: Parser Expr
+parseConsOp = do
+    left <- parseAdditionAndSubtraction
+    t <- peek
+    case t of
+        TDoubleColon -> do
+            consume TDoubleColon
+            right <- parseConsOp  -- Right associative
+            return $ ListCons left right
+        _ -> return left
 
 parseAdditionAndSubtraction :: Parser Expr
 parseAdditionAndSubtraction = do
@@ -103,6 +153,10 @@ parseMultiplicationAndDivision = do
                 consume TIntDiv
                 right <- parseApplication
                 parseRest (IntDiv left right)
+            TMod -> do
+                consume TMod
+                right <- parseApplication
+                parseRest (Mod left right)
             _ -> return left
 
 parseApplication :: Parser Expr
@@ -171,12 +225,17 @@ isNewStatement _ = False
 
 isBinaryOperator :: Token -> Bool
 isBinaryOperator TEquals = True
+isBinaryOperator TNotEquals = True
 isBinaryOperator TLessThan = True
+isBinaryOperator TLessThanEqual = True
+isBinaryOperator TGreaterThan = True
+isBinaryOperator TGreaterThanEqual = True
 isBinaryOperator TPlus = True
 isBinaryOperator TMinus = True
 isBinaryOperator TMult = True
 isBinaryOperator TDiv = True
 isBinaryOperator TIntDiv = True
+isBinaryOperator TMod = True
 isBinaryOperator TConcat = True
 isBinaryOperator _ = False
 
@@ -210,6 +269,65 @@ parsePrimary = do
         TVar s -> do
             consume t
             return $ Var s
+        LBracket -> do
+            consume LBracket
+            elements <- parseListElements
+            consume RBracket
+            return $ LitList elements
+        THead -> do
+            consume THead
+            consume LParen
+            expr <- parseExpr
+            consume RParen
+            return $ ListHead expr
+        TTail -> do
+            consume TTail
+            consume LParen
+            expr <- parseExpr
+            consume RParen
+            return $ ListTail expr
+        TEmpty -> do
+            consume TEmpty
+            consume LParen
+            expr <- parseExpr
+            consume RParen
+            return $ ListEmpty expr
+        TLength -> do
+            consume TLength
+            consume LParen
+            expr <- parseExpr
+            consume RParen
+            return $ ListLength expr
+        TAppend -> do
+            consume TAppend
+            consume LParen
+            listExpr <- parseExpr
+            consume TComma
+            elemExpr <- parseExpr
+            consume RParen
+            return $ ListAppend listExpr elemExpr
+        TNth -> do
+            consume TNth
+            consume LParen
+            listExpr <- parseExpr
+            consume TComma
+            indexExpr <- parseExpr
+            consume RParen
+            return $ ListNth listExpr indexExpr
+        TReverse -> do
+            consume TReverse
+            consume LParen
+            expr <- parseExpr
+            consume RParen
+            return $ ListReverse expr
+        TElem -> do
+            consume TElem
+            consume LParen
+            elemExpr <- parseExpr
+            consume TComma
+            listExpr <- parseExpr
+            consume RParen
+            return $ ListElem elemExpr listExpr
         LParen -> do
             -- Check if this is a parameter list for a lambda or just a parenthesized expression
             tokens <- getTokens
@@ -251,6 +369,28 @@ parseLambdaWithParams = do
     body <- parseLambdaBody
     return $ Lam params TInt body
 
+-- Parse list elements separated by commas
+parseListElements :: Parser [Expr]
+parseListElements = do
+    t <- peek
+    case t of
+        RBracket -> return []  -- Empty list
+        _ -> do
+            first <- parseExpr
+            rest <- parseListRest
+            return (first : rest)
+
+parseListRest :: Parser [Expr]
+parseListRest = do
+    t <- peek
+    case t of
+        TComma -> do
+            consume TComma
+            next <- parseExpr
+            rest <- parseListRest
+            return (next : rest)
+        _ -> return []
+
 -- Parse lambda body which can be either an expression or a block
 parseLambdaBody :: Parser Expr
 parseLambdaBody = do
@@ -260,13 +400,17 @@ parseLambdaBody = do
             stmts <- parseBlock
             case stmts of
                 [Return expr] -> return expr
-                [If cond (Return thenExpr) (Return elseExpr)] -> 
+                [If cond (Return thenExpr) (Just (Return elseExpr))] -> 
                     return $ IfExpr cond thenExpr elseExpr
-                [If cond thenStmt elseStmt] -> do
+                [If cond thenStmt (Just elseStmt)] -> do
                     -- Convert statement-based if to expression-based if
                     thenExpr <- stmtToExpr thenStmt
                     elseExpr <- stmtToExpr elseStmt
                     return $ IfExpr cond thenExpr elseExpr
+                [If cond (Return thenExpr) Nothing] -> 
+                    parseError "If expressions must have both then and else branches"
+                [If cond thenStmt Nothing] -> 
+                    parseError "If expressions must have both then and else branches"
                 [stmt] -> do
                     -- Handle any single statement that can be converted to expression
                     stmtToExpr stmt
@@ -277,18 +421,22 @@ parseLambdaBody = do
 stmtToExpr :: Stmt -> Parser Expr
 stmtToExpr (Return expr) = return expr
 stmtToExpr (Block [Return expr]) = return expr
-stmtToExpr (Block [If cond (Return thenExpr) (Return elseExpr)]) = 
+stmtToExpr (Block [If cond (Return thenExpr) (Just (Return elseExpr))]) = 
     return $ IfExpr cond thenExpr elseExpr
-stmtToExpr (Block [If cond thenStmt elseStmt]) = do
+stmtToExpr (Block [If cond thenStmt (Just elseStmt)]) = do
     -- Handle nested if with block statements
     thenExpr <- stmtToExpr thenStmt
     elseExpr <- stmtToExpr elseStmt
     return $ IfExpr cond thenExpr elseExpr
-stmtToExpr (If cond thenStmt elseStmt) = do
+stmtToExpr (If cond thenStmt (Just elseStmt)) = do
     -- Handle if statements directly
     thenExpr <- stmtToExpr thenStmt
     elseExpr <- stmtToExpr elseStmt
     return $ IfExpr cond thenExpr elseExpr
+stmtToExpr (Block [If _ _ Nothing]) = 
+    parseError "If expressions must have both then and else branches"
+stmtToExpr (If _ _ Nothing) = 
+    parseError "If expressions must have both then and else branches"
 stmtToExpr _ = parseError "Cannot convert complex statement to expression"
 
 parseParamList :: Parser [String]
@@ -336,9 +484,13 @@ parseStmt = do
             cond <- parseExpr
             consume TThen
             thenBranch <- parseStmt
-            consume TElse
-            elseBranch <- parseStmt
-            return $ If cond thenBranch elseBranch
+            nextToken <- peek
+            case nextToken of
+                TElse -> do
+                    consume TElse
+                    elseBranch <- parseStmt
+                    return $ If cond thenBranch (Just elseBranch)
+                _ -> return $ If cond thenBranch Nothing
         TWhile -> do
             consume TWhile
             cond <- parseExpr

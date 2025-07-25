@@ -3,7 +3,11 @@ module Language.Lexer
     , tokenize
     ) where
 
-import Data.Char (isAlpha, isDigit, isAlphaNum)
+import Data.Char (isAlpha, isDigit)
+
+-- Helper function to check if a character is valid in an identifier
+isIdentifierChar :: Char -> Bool
+isIdentifierChar c = isAlpha c || isDigit c || c == '_'
 
 data Token
   = TVar String
@@ -15,11 +19,17 @@ data Token
   | TLet
   | TAssign
   | TEquals
+  | TNotEquals
+  | TLessThan
+  | TLessThanEqual
+  | TGreaterThan
+  | TGreaterThanEqual
   | TPlus
   | TMinus
   | TMult
   | TDiv
   | TIntDiv
+  | TMod
   | TConcat
   | TIf
   | TThen
@@ -34,8 +44,18 @@ data Token
   | RParen
   | LBrace
   | RBrace
+  | LBracket  -- [
+  | RBracket  -- ]
   | TComma
-  | TLessThan
+  | TDoubleColon  -- ::
+  | THead     -- head keyword
+  | TTail     -- tail keyword
+  | TEmpty    -- empty keyword
+  | TLength   -- length keyword
+  | TAppend   -- append keyword
+  | TNth      -- nth keyword
+  | TReverse  -- reverse keyword
+  | TElem     -- elem keyword
   | TEOF
   deriving (Show, Eq)
 
@@ -43,7 +63,11 @@ tokenize :: String -> [Token]
 tokenize [] = [TEOF]
 tokenize ('-':'>':cs) = TArrow : tokenize cs
 tokenize ('=':'=':cs) = TEquals : tokenize cs
+tokenize ('!':'=':cs) = TNotEquals : tokenize cs
+tokenize ('<':'=':cs) = TLessThanEqual : tokenize cs
+tokenize ('>':'=':cs) = TGreaterThanEqual : tokenize cs
 tokenize ('/':'/':cs) = TIntDiv : tokenize cs
+tokenize (':':':':cs) = TDoubleColon : tokenize cs
 tokenize ('#':cs) = tokenize (dropWhile (/= '\n') cs) -- Skip comments
 tokenize ('"':cs) = let (str, rest) = parseString cs in TLitString str : tokenize rest
 tokenize ('+':'+':cs) = TConcat : tokenize cs
@@ -51,7 +75,7 @@ tokenize (c:cs)
     
     | c `elem` " \t\n" = tokenize cs
     | isAlpha c =
-        let (var, rest) = span isAlphaNum (c:cs)
+        let (var, rest) = span isIdentifierChar (c:cs)
         in keyword var : tokenize rest
     | isDigit c =
         let (num, rest) = span isDigit (c:cs)
@@ -63,12 +87,16 @@ tokenize (c:cs)
     | c == '-' = TMinus : tokenize cs
     | c == '*' = TMult : tokenize cs
     | c == '/' = TDiv : tokenize cs
+    | c == '%' = TMod : tokenize cs
     | c == '<' = TLessThan : tokenize cs
+    | c == '>' = TGreaterThan : tokenize cs
     | c == '\\' = TLam : tokenize cs
     | c == '(' = LParen : tokenize cs
     | c == ')' = RParen : tokenize cs
     | c == '{' = LBrace : tokenize cs
     | c == '}' = RBrace : tokenize cs
+    | c == '[' = LBracket : tokenize cs
+    | c == ']' = RBracket : tokenize cs
     | c == ',' = TComma : tokenize cs
     | otherwise = tokenize cs -- Skip unknown characters
 
@@ -85,6 +113,14 @@ keyword "false" = TLitBool False
 keyword "assert" = TAssert
 keyword "print" = TPrint
 keyword "set" = TSet
+keyword "head" = THead
+keyword "tail" = TTail
+keyword "empty" = TEmpty
+keyword "length" = TLength
+keyword "append" = TAppend
+keyword "nth" = TNth
+keyword "reverse" = TReverse
+keyword "elem" = TElem
 keyword s = TVar s
 
 -- Parse a string literal until the closing quote

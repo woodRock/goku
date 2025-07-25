@@ -1,0 +1,16 @@
+# Test optional else clauses
+let x = 5
+
+# If without else - should print "positive"
+if x > 0 then {
+    print "positive"
+}
+
+# If with else - should print "not zero"  
+if x == 0 then {
+    print "zero"
+} else {
+    print "not zero"
+}
+
+print "done"

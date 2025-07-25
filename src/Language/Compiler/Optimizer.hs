@@ -13,8 +13,8 @@ optimizeStmt :: Stmt -> Stmt
 optimizeStmt (ExprStmt expr) = ExprStmt (optimizeExpr expr)
 optimizeStmt (Let name t expr) = Let name t (optimizeExpr expr)
 optimizeStmt (Set name expr) = Set name (optimizeExpr expr)
-optimizeStmt (If cond thenBranch elseBranch) =
-    If (optimizeExpr cond) (optimizeStmt thenBranch) (optimizeStmt elseBranch)
+optimizeStmt (If cond thenBranch maybeElseBranch) =
+    If (optimizeExpr cond) (optimizeStmt thenBranch) (fmap optimizeStmt maybeElseBranch)
 optimizeStmt (While cond body) =
     While (optimizeExpr cond) (optimizeStmt body)
 optimizeStmt (Return expr) = Return (optimizeExpr expr)

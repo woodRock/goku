@@ -1,0 +1,47 @@
+# Advanced list test demonstrating various operations
+print "=== List Functionality Test ===";
+
+# Create lists
+let numbers = [10, 20, 30];
+let more_numbers = [40, 50];
+print "Original list:";
+print numbers;
+
+# Test cons operations
+let extended = 5 :: numbers;
+print "After prepending 5:";
+print extended;
+
+# Test head operations with nested calls
+let first_element = head(extended);
+print "First element:";
+print first_element;
+
+# Test tail operations
+let without_first = tail(extended);
+print "List without first element:";
+print without_first;
+
+# Test chaining operations
+let second_element = head(tail(extended));
+print "Second element (using head(tail)):";
+print second_element;
+
+# Test length operations
+print "Length of original list:";
+print length(numbers);
+print "Length after prepending:";
+print length(extended);
+
+# Test empty checks
+print "Is numbers empty?";
+print empty(numbers);
+print "Is empty list empty?";
+print empty([]);
+
+# Test building a list using cons
+let built_list = 1 :: 2 :: 3 :: [];
+print "List built with cons operations:";
+print built_list;
+
+print "=== Test completed successfully ===";

@@ -1,0 +1,13 @@
+let x = 10
+let y = 3
+let result = x % y
+print result
+assert result == 1
+
+let a = 15
+let b = 4
+assert (a % b) == 3
+
+let c = 20
+let d = 5
+assert (c % d) == 0

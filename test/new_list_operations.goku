@@ -1,0 +1,36 @@
+# Test new list operations
+print "=== Testing New List Operations ===";
+
+# Test append function
+let numbers = [1, 2, 3];
+print "Original list:";
+print numbers;
+
+let appended = append(numbers, 4);
+print "After appending 4:";
+print appended;
+
+# Test list concatenation with ++
+let more_numbers = [5, 6];
+let concatenated = numbers ++ more_numbers;
+print "Concatenated [1,2,3] ++ [5,6]:";
+print concatenated;
+
+# Test nth (element access)
+print "Element at index 0:";
+print nth(numbers, 0);
+print "Element at index 2:";
+print nth(numbers, 2);
+
+# Test reverse
+let reversed_list = reverse(numbers);
+print "Reversed list:";
+print reversed_list;
+
+# Test elem (membership)
+print "Is 2 in the list?";
+print elem(2, numbers);
+print "Is 10 in the list?";
+print elem(10, numbers);
+
+print "=== All tests completed ===";

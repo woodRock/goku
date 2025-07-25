@@ -1,0 +1,36 @@
+# Test edge cases and error handling
+print "=== Testing Edge Cases ===";
+
+# Test empty list operations
+let empty_list = [];
+print "Empty list:";
+print empty_list;
+
+print "Length of empty list:";
+print length(empty_list);
+
+print "Is empty list empty?";
+print empty(empty_list);
+
+print "Reversed empty list:";
+print reverse(empty_list);
+
+# Test bounds checking
+let small_list = [10, 20];
+print "Small list:";
+print small_list;
+
+print "Valid index (0):";
+print nth(small_list, 0);
+
+print "Valid index (1):";
+print nth(small_list, 1);
+
+# Test list concatenation types
+let strings = ["hello", "world"];
+let more_strings = ["!"];
+let string_concat = strings ++ more_strings;
+print "String list concatenation:";
+print string_concat;
+
+print "=== Edge case tests completed ===";
